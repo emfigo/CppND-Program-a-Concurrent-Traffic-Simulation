@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <random>
 #include "TrafficLight.h"
@@ -78,20 +79,26 @@ void TrafficLight::cycleThroughPhases()
     // Also, the while-loop should use std::this_thread::sleep_for to wait 1ms between two cycles.
 
   TrafficLightPhase nextPhase;
-  int randNum;
+  auto start = std::chrono::high_resolution_clock::now();
+  srand( time(NULL) );
+  int randWaitTime = (rand() % (RD_MAX - RD_MIN + 1 )) + RD_MIN;
 
   while (true) {
-    randNum = rand() % (RD_MAX - RD_MIN + 1 ) + RD_MIN;
-    std::this_thread::sleep_for(std::chrono::seconds((randNum * 2) + 2));
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
 
-    if (_currentPhase == TrafficLightPhase::red) {
-      nextPhase = TrafficLightPhase::green;
-    } else {
-      nextPhase = TrafficLightPhase::red;
+    if (diff.count() >= randWaitTime){
+      randWaitTime = (rand() % (RD_MAX - RD_MIN + 1 )) + RD_MIN;
+      start = std::chrono::high_resolution_clock::now();
+
+      if (_currentPhase == TrafficLightPhase::red) {
+        nextPhase = TrafficLightPhase::green;
+      } else {
+        nextPhase = TrafficLightPhase::red;
+      }
+
+      _currentPhase = nextPhase;
+      _messages.send(std::move(nextPhase));
     }
-
-    _currentPhase = nextPhase;
-    _messages.send(std::move(nextPhase));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
